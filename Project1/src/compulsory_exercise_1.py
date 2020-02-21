@@ -27,6 +27,9 @@ cb_plus = (cV_b**2 + cA_b**2)
 cb_minus = (cV_b**2 - cA_b**2)
 
 
+m_square = M**2
+M_square = m**2
+
 def QED(E_cm, c):
 
     if(isinstance(c, (list, tuple, np.ndarray))==1 and isinstance(E_cm, (list, tuple, np.ndarray))==0):
@@ -43,16 +46,35 @@ def QED(E_cm, c):
         ksi = 3 * (2*np.pi) * 1/float(64*np.pi**2*s) * (pp/float(p)) * hc2
 
         ds_QED = np.zeros(len(c))
+        M_AA = np.zeros(len(c))
+
+        P = np.sqrt( E_square - m_square )
+        p1 = np.sqrt( E_square - M_square )
+
 
         for i in xrange(len(c)):
+
+            pk = (E_square + P**2)#*np.ones(np.size(c))
+            pp1 = E_square - P*p1*c[i]
+            pk1 = E_square + P*p1*c[i]
+            kp1 = E_square + P*p1*c[i]
+            kk1 = E_square - P*p1*c[i]
+            p1k1  = (E_square + p1*p1)#*np.ones(np.size(c))
+
+
+	# Amplitudes
+
             p1p3 = p2p4 = E_square - p*pp*c[i]
             p1p4 = p2p3 = E_square + p*pp*c[i]
 
 #            a[i] = (24*np.pi*alpha**2)/float(9*s)*np.sqrt((s - m**2)/float(s - M**2)) * ((1 + c[i])**2 + (1 - c[i]**2)*(-m**2/float(s) - M**2/float(s)) + M**2*m**2/float(s**2)*c[i]**2)
 #            a[i] = np.pi*alpha**2/float(6*s)*np.sqrt(s-m**2)/float(np.sqrt(s-M**2)) * (1 + c[i]**2 + (1 - c[i]**2)*(m**2/float(s) + M**2/float(s)) + m**2*M**2/float(s)*c[i]**2)
-            ds_QED[i] = ksi*ee**2/float(9*s**2) * 8*(p1p4*p2p3 + p1p3*p2p4 + m**2*p1p2 + M**2*p3p4 + 2*m**2*M**2)
+            ds_QED[i] = ksi*(4*np.pi*alpha)**2/float(9*s**2) * 8*(p1p4*p2p3 + p1p3*p2p4 + m**2*p1p2 + M**2*p3p4 + 2*m**2*M**2)
 
-        return ds_QED #(??)
+            M_AA[i] = ee**2/(9*s**2) * 8*( kp1*pk1 + kk1*pp1 + M_square*pk + m_square*p1k1 + 2*M_square*m_square) * 3* 1/(2.56810e-9)*2*np.pi/(64*np.pi**2*s)*p1/P#**np.ones(np.size(c)) )
+
+
+        return ds_QED, M_AA #(??)
 
     elif(isinstance(E_cm, (list, tuple, np.ndarray))==1 and isinstance(c, (list, tuple, np.ndarray))==0):
         print "Calculating QED cross-section as function of s..."
@@ -87,10 +109,16 @@ c1 = np.linspace(-1.0, 1.0, 100)
 c2 = 0.
 
 #QED
-plt.plot(c1, QED(s1, c1), 'r-')
+plt.plot(c1, QED(E_cm, c1)[0], 'r-')
 plt.title(r'QED, $\frac{d\sigma}{d(cos\theta)}$')
 plt.grid('on')
 plt.show()
+
+plt.plot(c1, QED(E_cm, c1)[1], 'r-')
+plt.title(r'QED, $\frac{d\sigma}{d(cos\theta)}$')
+plt.grid('on')
+plt.show()
+
 
 plt.plot(np.sqrt(s2), QED(s2, c2), 'b-')
 plt.title('QED')
