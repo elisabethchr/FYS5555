@@ -1,21 +1,30 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+hc2 = 2.56810e-9    # conversion factor GeV^-2 -> pb
 
-#b) Cross section
-#hc2 = 0.389e9     #hc2 = 38809e4  (hbar^2c^2, Gev^-2 = pb = 2.568e9)
-hc2 = 2.56810e9
-
+# masses
 m = 4.18      # mass b-quark [GeV]
-M = 0.10565838 #mass mu [GeV]
-mZ = 91.1876    # mass Z-boson [GeV]
+M = 0.10566   # mass mu [GeV]
+mZ = 91.1876  # mass Z-boson [GeV]
+mH = 125.18   # mass Higgs [GeV]
+mW = 80.379   # mass W-bosons [GeV]
 
-e = 0.31345
-ee = e**2
+# fine-structure and coupling constants
+sinW_square = 0.23146; sinW = np.sqrt(sinW_square)
+cosW_square = 1 - sinW_square; cosW = np.sqrt(cosW_square)
+
 alpha = 1/137.
-gZ = 0.718082
+e = np.sqrt(4*np.pi*alpha)
+ee = e**2
+gZ = e/(sinW*cosW)
+gW = e/sinW
 
-# coupling constants for Z (see tab. 15.1 on p. 422 in Thomson for weak mixing angle)
+# decay widths
+widthH = 0.013      #0.0061744
+widthZ = 2.4952
+
+# coupling constants for Z (see tab. 15.1 on p. 423 in Thomson for weak mixing angle)
 cV_mu = -0.04
 cA_mu = -0.5
 cV_b = -0.35
@@ -27,102 +36,79 @@ cb_plus = (cV_b**2 + cA_b**2)
 cb_minus = (cV_b**2 - cA_b**2)
 
 
-m_square = M**2
-M_square = m**2
-
-def QED(E_cm, c):
-
+def CS(E_cm, c):
     if(isinstance(c, (list, tuple, np.ndarray))==1 and isinstance(E_cm, (list, tuple, np.ndarray))==0):
-        print "Calculating QED differential cross-section as function of cos(theta)...\n"
+        print "Calculating differential cross-section as function of cos(theta)...\n"
 
         s = E_cm**2         #E_cm = 2E
         E_square = (0.5*E_cm)**2
 
-        p = np.sqrt(E_square - M**2)
-        pp = np.sqrt(E_square - m**2)
+        p = np.sqrt(E_square - M**2)*np.ones(np.size(c))
+        pp = np.sqrt(E_square - m**2)*np.ones(np.size(c))
         p1p2 = E_square + p**2
         p3p4 = E_square + pp**2
+        p1p3 = p2p4 = E_square + p*pp*c
+        p1p4 = p2p3 = E_square - p*pp*c
 
-        ksi = 3 * (2*np.pi) * 1/float(64*np.pi**2*s) * (pp/float(p)) * hc2
+        M_A = np.zeros(len(c))
+        M_Z = np.zeros(len(c))
+        M_AZ = np.zeros(len(c))
+        M_H = np.zeros(len(c))
 
-        ds_QED = np.zeros(len(c))
-        M_AA = np.zeros(len(c))
-
-        P = np.sqrt( E_square - m_square )
-        p1 = np.sqrt( E_square - M_square )
+        ksi = 3 * (2*np.pi)/(64.*np.pi**2*s) * (pp[0]/(p[0])) / hc2
 
 
         for i in xrange(len(c)):
 
-            pk = (E_square + P**2)#*np.ones(np.size(c))
-            pp1 = E_square - P*p1*c[i]
-            pk1 = E_square + P*p1*c[i]
-            kp1 = E_square + P*p1*c[i]
-            kk1 = E_square - P*p1*c[i]
-            p1k1  = (E_square + p1*p1)#*np.ones(np.size(c))
+            M_H[i] = (m**2*M**2*gW**4)/(4*(s-mH**2-1j*mH*widthH)**2*mW**4) * (p1p2[i]*p3p4[i] - m**2*p1p2[i] - M**2*p3p4[i] + m**2*M**2)
+
+            M_A[i] = (4*np.pi*alpha)**2/float(9*s**2) * 8*(p1p4[i]*p2p3[i] + p1p3[i]*p2p4[i] + m**2*p1p2[i] + M**2*p3p4[i] + 2*m**2*M**2)
+
+            M_Z[i] = gZ**4/(2*((s-mZ**2)**2 + mZ**2*widthZ**2)) * (cMu_plus*cb_plus*(p1p4[i]*p2p3[i] + p1p3[i]*p2p4[i])\
+                        + m**2*cMu_plus*cb_minus*p1p2[i]\
+                        + M**2*cMu_minus*cb_plus*p3p4[i]\
+                        + 4*cV_mu*cA_mu*cV_b*cA_b*(p1p4[i]*p2p3[i] - p1p3[i]*p2p4[i])\
+                        + 2*M**2*m**2*cMu_minus*cb_minus)
+            # M_AZ[i] =
+
+        M_H *= ksi; M_A *= ksi; M_Z *= ksi
+        return M_H, M_A, M_Z
 
 
-	# Amplitudes
-
-            p1p3 = p2p4 = E_square - p*pp*c[i]
-            p1p4 = p2p3 = E_square + p*pp*c[i]
-
-#            a[i] = (24*np.pi*alpha**2)/float(9*s)*np.sqrt((s - m**2)/float(s - M**2)) * ((1 + c[i])**2 + (1 - c[i]**2)*(-m**2/float(s) - M**2/float(s)) + M**2*m**2/float(s**2)*c[i]**2)
-#            a[i] = np.pi*alpha**2/float(6*s)*np.sqrt(s-m**2)/float(np.sqrt(s-M**2)) * (1 + c[i]**2 + (1 - c[i]**2)*(m**2/float(s) + M**2/float(s)) + m**2*M**2/float(s)*c[i]**2)
-            ds_QED[i] = ksi*(4*np.pi*alpha)**2/float(9*s**2) * 8*(p1p4*p2p3 + p1p3*p2p4 + m**2*p1p2 + M**2*p3p4 + 2*m**2*M**2)
-
-            M_AA[i] = ee**2/(9*s**2) * 8*( kp1*pk1 + kk1*pp1 + M_square*pk + m_square*p1k1 + 2*M_square*m_square) * 3* 1/(2.56810e-9)*2*np.pi/(64*np.pi**2*s)*p1/P#**np.ones(np.size(c)) )
-
-
-        return ds_QED, M_AA #(??)
-
-    elif(isinstance(E_cm, (list, tuple, np.ndarray))==1 and isinstance(c, (list, tuple, np.ndarray))==0):
-        print "Calculating QED cross-section as function of s..."
-
-        b = np.zeros(len(E_cm))
-        for i in xrange(len(E_cm)):
-            b[i] = np.pi*alpha**2/3.*np.sqrt((s[i]-m**2)/float(s[i]-M**2)) * (4/3.*(1+m**2/float(s[i]) + M**2/float(s[i])) + M**2*m**2/float(s[i]))
-        return b*hc2 # *2(??)
-
-def Z(s, theta):
-    ksi = gZ**4/float(64*np.pi)
-    if(isinstance(theta, (list, tuple, np.ndarray))==1 and isinstance(s, (list, tuple, np.ndarray))==0):
-        print "Calculating EW differential cross-section as function of cos(theta)...\n"
-
-        a = np.zeros(len(theta))
-        for i in xrange(len(theta)):
-            b[i] = ksi/float((s-mZ**2)**2) * np.sqrt((s-m**2)/float(s-M**2)) * ( 2*(cMu_plus)*(cb_plus)*(s*(1+np.cos(theta[i])**2) - (m**2 + M**2)*np.cos(theta[i])**2 + 1/float(s)*m**2*M**2*np.cos(theta[i])**2)\
-            + m**2*cMu_plus*cb_minus * (2-M**2/float(s))\
-            + M**2*cMu_minus*cb_plus * (2-m**2/float(s))\
-            + 2/float(s)*M**2*m**2*cMu_minus*cb_minus\
-            + 16*cV_mu*cA_mu*cV_b*cA_b * np.sqrt(1-1/float(s)*(m**2 + M**2) + 1/float(s**2)*m**2*M**2)*np.cos(theta[i]) )
-        return a*hc2 # *2(??)
-
-    elif(isinstance(s, (list, tuple, np.ndarray))==1 and isinstance(theta, (list, tuple, np.ndarray))==0):
-        print "Calculating EW cross-section as function of s..."
-
-
-E_cm = 10.
+E_cm = 300.
 s1 = E_cm**2  #GeV
-s2 = np.linspace(s1, s1*10, 10000)
-c1 = np.linspace(-1.0, 1.0, 100)
+s2 = np.linspace(s1, s1*10, 1e4)
+c1 = np.linspace(-1.0, 1.0, 1e3)
 c2 = 0.
 
+#Higgs
+plt.plot(c1, CS(E_cm, c1)[0], 'r-')
+plt.legend([r'$M_H^2$'])
+plt.xlabel(r'$\cos\theta$')
+plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta})$', size=14)
+plt.tight_layout()
+plt.grid('on')
+plt.show()
+
 #QED
-plt.plot(c1, QED(E_cm, c1)[0], 'r-')
-plt.title(r'QED, $\frac{d\sigma}{d(cos\theta)}$')
+plt.plot(c1, CS(E_cm, c1)[1], 'r-')
+plt.legend([r'$M_\gamma^2$'])
+plt.xlabel(r'$\cos\theta$')
+plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta})$', size=14)
+plt.tight_layout()
 plt.grid('on')
 plt.show()
 
-plt.plot(c1, QED(E_cm, c1)[1], 'r-')
-plt.title(r'QED, $\frac{d\sigma}{d(cos\theta)}$')
+#Electroweak
+plt.plot(c1, CS(E_cm, c1)[2], 'r-')
+plt.legend([r'$M_Z^2$'])
+plt.xlabel(r'$\cos\theta$')
+plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta})$', size=14)
+plt.tight_layout()
 plt.grid('on')
 plt.show()
 
 
-plt.plot(np.sqrt(s2), QED(s2, c2), 'b-')
-plt.title('QED')
-plt.show()
 """
 #Electroweak
 #print Z(s, theta)
