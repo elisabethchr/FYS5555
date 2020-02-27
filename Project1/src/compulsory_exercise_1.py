@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolor
+from scipy.integrate import simps
+from scipy import integrate
 
 #-----------------------------
 #    import comphep data
@@ -11,13 +13,20 @@ def importFile(filename, rows):
     var = data[:, 0]
     dat = data[:, 1]
     return var, dat
-
+# differential cross-sections
 A10theta, A10dsigma = importFile("../data/comphep_dsigma_A_10.txt", 3)
 A150theta, A150dsigma = importFile("../data/comphep_dsigma_A_150.txt", 3)
 H150theta, H150dsigma = importFile("../data/comphep_dsigma_H_150.txt", 3)
 Z150theta, Z150dsigma = importFile("../data/comphep_dsigma_Z_150.txt", 3)
 tot150theta, tot150dsigma = importFile("../data/comphep_dsigma_total_150.txt", 3)
-
+# total cross-sections
+totE_lin, totSigma_lin = importFile("../data/comphep_sigma_10_150_lin.txt", 3)
+totE_log, totSigma_log = importFile("../data/comphep_sigma_10_150_log.txt", 3)
+#totE_lin, totSigma_lin = importFile("../data/comphep_sigma_100_200_lin.txt", 3)
+# forward-backward asymmetry
+asymE_bb, asymSigma_bb = importFile("../data/comphep_Asym_tot_bB_10_150_lin.txt", 3)
+asymE_cc, asymSigma_cc = importFile("../data/comphep_Asym_tot_cC_10_150_lin.txt", 3)
+asymE_ee, asymSigma_ee = importFile("../data/comphep_Asym_tot_eE_10_150_lin.txt", 3)
 
 #-----------------------------
 #     define variables
@@ -25,7 +34,7 @@ tot150theta, tot150dsigma = importFile("../data/comphep_dsigma_total_150.txt", 3
 hc2 = 2.56810e-9    # conversion factor GeV^-2 -> pb
 
 # masses
-m = 4.18      # mass b-quark [GeV]
+m = [4.18, 1.275, 0.5109989e-3]      # mass b-quark, c, e- [GeV]
 M = 0.10566   # mass mu [GeV]
 mZ = 91.1876  # mass Z-boson [GeV]
 mH = 125.18   # mass Higgs [GeV]
@@ -48,25 +57,34 @@ widthZ = 2.4952
 # coupling constants for Z (see tab. 15.1 on p. 423 in Thomson for weak mixing angle)
 cV_mu = -0.04
 cA_mu = -0.5
-cV_b = -0.35
-cA_b = -0.5
+cV_b = [-0.35, 0.19, -0.04] # b-quark, c-quark, e
+cA_b = [-0.5, 0.5, -0.5]    # b-quark, c-quark, e
 
-cMu_minus = (cV_mu**2 - cA_mu**2)
-cMu_plus = (cV_mu**2 + cA_mu**2)
-cb_plus = (cV_b**2 + cA_b**2)
-cb_minus = (cV_b**2 - cA_b**2)
+cMu_minus = (np.square(cV_mu) - np.square(cA_mu))
+cMu_plus = (np.square(cV_mu) + np.square(cA_mu))
+cb_plus = (np.square(cV_b) + np.square(cA_b))
+cb_minus = (np.square(cV_b) - np.square(cA_b))
 
 
-#--------------------------------------------------------
-#   calculate differential cross-sections for A, Z, H
-#--------------------------------------------------------
-def CS(E_cm, c):
+# Forwards-backwards asymmetry
+def AFB(dCS, Ecm):
+    Bw = np.trapz(dCS[:int(len(Ecm)/2.)]).real
+    Fw = np.trapz(dCS[(int(len(Ecm)/2.)):]).real
+    if Fw==0 and Bw==0:
+        print Fw, Bw
+        Fw = 1e-9
+        Bw = 1e-9
+    AFB = (Fw - Bw)/float(Fw + Bw)
+    return AFB
+
+# Differential cross-section
+def dCS(E_cm, c, m, cV_b, cA_b, cb_plus, cb_minus):
     if(isinstance(c, (list, tuple, np.ndarray))==1 and isinstance(E_cm, (list, tuple, np.ndarray))==0):
-        print "\nCalculating differential cross-section as function of cos(theta)...\n"
+#        print "\nCalculating differential cross-section as function of cos(theta)...\n"
         a = c
 
     elif(isinstance(c, (list, tuple, np.ndarray))==0 and isinstance(E_cm, (list, tuple, np.ndarray))==1):
-        print "\nCalculating total cross-section as function of center of mass energy...\n"
+#        print "\nCalculating total cross-section as function of center of mass energy...\n"
         a = E_cm
 
     s = E_cm**2         #E_cm = 2E
@@ -101,83 +119,201 @@ def CS(E_cm, c):
                 + cV_mu*cV_b*m**2*p1p2\
                 + cV_mu*cV_b*M**2*p3p4\
                 - cA_mu*cA_b*(p1p4*p2p3 - p1p3*p2p4)\
-                +2*m**2*M**2)
+                + 2*m**2*M**2)
 
     M_H *= ksi; M_A *= ksi; M_Z *= ksi; M_AZ*=ksi
     return M_H, M_A, M_Z, M_AZ
 
+#------------------------------------------------------
+#    Total cross-section calculation and plotting
+#------------------------------------------------------
+n = 5000
+E_cm = np.linspace(10, 150, n)
+c = np.linspace(-1.0, 1.0, n)
 
+CS_H = np.zeros((len(m), len(E_cm)))
+CS_A = np.zeros((len(m), len(E_cm)))
+CS_Z = np.zeros((len(m), len(E_cm)))
+CS_AZ = np.zeros((len(m), len(E_cm)))
+CS_tot = np.zeros((len(m), len(E_cm)))
+#def dCS(E_cm, c, m, cV_b, cA_b, cb_plus, cb_minus):
+
+for j in range(len(m)):
+    for i in range(len(E_cm)):
+        CS_H[j, i] = simps(dCS(E_cm[i], c, m[j], cV_b[j], cA_b[j], cb_plus[j], cb_minus[j])[0], c)
+        CS_A[j, i] = simps(dCS(E_cm[i], c, m[j], cV_b[j], cA_b[j], cb_plus[j], cb_minus[j])[1], c)
+        CS_Z[j, i] = simps(dCS(E_cm[i], c, m[j], cV_b[j], cA_b[j], cb_plus[j], cb_minus[j])[2], c)
+        CS_AZ[j, i] = simps(dCS(E_cm[i], c, m[j], cV_b[j], cA_b[j], cb_plus[j], cb_minus[j])[3], c)
+        CS_tot[j, i] = CS_A[j, i] + CS_Z[j, i] + 2*CS_AZ[j, i]
+
+print CS_tot[0, -1]
+
+plt.plot(E_cm, CS_tot[0, :], 'b.')
+plt.plot(E_cm, CS_tot[1, :], 'r.')
+plt.plot(E_cm, CS_tot[2, :], 'g.')
+plt.legend([r'$\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'$\sigma_{\mu^+\mu^-\rightarrow\overline{c}c}$', r'$\sigma_{\mu^+\mu^-\rightarrow e^+e^-}$'])
+plt.grid('on')
+plt.show()
+
+plt.plot(E_cm, CS_tot[0, :], 'r.')
+plt.plot(totE_lin, totSigma_lin, 'b-')
+plt.xlabel(r'$\sqrt{s}$', size=12)
+plt.ylabel(r'$\sigma$ [pb]')
+#plt.xlim(10, 150)
+plt.legend([r'Numerical $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'Analytical $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$'])
+plt.grid('on')
+plt.tight_layout()
+plt.savefig('sigma_tot_10_150_lin.pdf')
+plt.show()
+
+plt.loglog(E_cm, CS_tot[0, :], 'r.')
+plt.plot(totE_log, totSigma_log, 'b-')
+plt.xlabel(r'$\sqrt{s}$', size=12)
+plt.ylabel(r'$\sigma$ [pb]')
+#plt.xlim(10, 150)
+plt.legend([r'Numerical $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'Analytical $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$'])
+plt.grid('on')
+plt.tight_layout()
+plt.savefig('sigma_tot_10_150_log.pdf')
+plt.show()
+
+
+#-----------------------------------------
+#     Forwards-Backwards asymmetry
+#------------------------------------------
+n = 100
+E_cm = np.linspace(10, 150, n)
+c = np.linspace(-1.0, 1.0, n)
+
+CS_H = np.zeros(len(E_cm))
+CS_A = np.zeros(len(E_cm))
+CS_Z = np.zeros(len(E_cm))
+CS_AZ = np.zeros(len(E_cm))
+CS_tot = np.zeros(len(E_cm))
+#def dCS(E_cm, c, m, cV_b, cA_b, cb_plus, cb_minus):
+
+AFB_H = np.zeros((len(m), n))
+AFB_A = np.zeros((len(m), n))
+AFB_Z = np.zeros((len(m), n))
+AFB_AZ = np.zeros((len(m), n))
+AFB_tot = np.zeros((len(m), n))
+
+for j in range(len(m)):
+    for i in range(len(E_cm)):
+        dCS_H = dCS(E_cm[i], c, m[j], cV_b[j], cA_b[j], cb_plus[j], cb_minus[j])[0]
+        dCS_A = dCS(E_cm[i], c, m[j], cV_b[j], cA_b[j], cb_plus[j], cb_minus[j])[1]
+        dCS_Z = dCS(E_cm[i], c, m[j], cV_b[j], cA_b[j], cb_plus[j], cb_minus[j])[2]
+        dCS_AZ = dCS(E_cm[i], c, m[j], cV_b[j], cA_b[j], cb_plus[j], cb_minus[j])[3]
+        dCS_tot = dCS_A + dCS_Z + 2*dCS_AZ
+
+        AFB_H[j, i] = AFB(dCS_H, E_cm)
+        AFB_A[j, i] = AFB(dCS_A, E_cm)
+        AFB_Z[j, i] = AFB(dCS_Z, E_cm)
+        AFB_AZ[j, i] = AFB(dCS_AZ, E_cm)
+        AFB_tot[j, i] = AFB(dCS_tot, E_cm)
+
+plt.plot(E_cm, AFB_tot[0, :], 'b.')
+plt.plot(E_cm, AFB_tot[1, :], 'r.')
+plt.plot(E_cm, AFB_tot[2, :], 'g.')
+plt.plot(asymE_bb, asymSigma_bb, 'b--')
+plt.plot(asymE_cc, asymSigma_cc, 'r--')
+plt.plot(asymE_ee, asymSigma_ee, 'g--')
+plt.xlabel(r'$\sqrt{s}$')
+plt.ylabel(r'$\sigma [pb]$')
+plt.title('Forward-Backward Asymmetry')
+plt.legend([r'Analytic $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'Analytic $\sigma_{\mu^+\mu^-\rightarrow\overline{c}c}$', r'Analytic $\sigma_{\mu^+\mu^-\rightarrow e^+e^-}$',\
+            r'Numerical $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'Numerical $\sigma_{\mu^+\mu^-\rightarrow\overline{c}c}$', r'Numerical $\sigma_{\mu^+\mu^-\rightarrow e^+e^-}$'])
+plt.grid('on')
+plt.show()
+
+"""
+plt.plot(E_cm, AFB_tot, 'r.')
+plt.xlabel(r'$\sqrt{s}$', size=14)
+plt.ylabel(r'$\sigma_{FB}[pb]$', size=14)
+plt.title('Foward-Backward Asymmetry')
+plt.legend(['\sigma_{tot}', 'A', 'Z', 'AZ'])
+plt.grid('on')
+plt.show()
+
+"""
+
+"""
+#---------------------------------------------
+#    Differential cross-section plotting
+#---------------------------------------------
 E_cm = 150.
-s1 = E_cm**2  #GeV
-s2 = np.linspace(s1, s1*10, 1e4)
-c1 = np.linspace(-1.0, 1.0, 1e3)
-c2 = 0.
+dCS_H = dCS(E_cm, c, m[0], cV_b[0], cA_b[0], cb_plus[0], cb_minus[0])[0]
+dCS_A = dCS(E_cm, c, m[0], cV_b[0], cA_b[0], cb_plus[0], cb_minus[0])[1]
+dCS_Z = dCS(E_cm, c, m[0], cV_b[0], cA_b[0], cb_plus[0], cb_minus[0])[2]
+dCS_AZ = dCS(E_cm, c, m[0], cV_b[0], cA_b[0], cb_plus[0], cb_minus[0])[3]
+dCS_tot = dCS_A + dCS_Z + 2*dCS_AZ
 
-#-----------------------------
-#         plotting
-#-----------------------------
-M_H = CS(E_cm, c1)[0]
-M_A = CS(E_cm, c1)[1]
-M_Z = CS(E_cm, c1)[2]
-M_AZ = CS(E_cm, c1)[3]
-M_tot = M_A + M_Z + 2*M_AZ
+
 
 # Higgs
-plt.plot(c1, M_H, 'r--')
+plt.plot(c, dCS_H, 'r--')
 plt.plot(H150theta, H150dsigma, 'b-')
 plt.legend([r'$|M_H|^2$', r'Comphep $|M_H|^2$'])
 plt.xlabel(r'$\cos\theta$')
-plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta})$', size=14)
+plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta)} [pb]$', size=14)
 plt.title(r'$\sqrt{s} = %i$ GeV' %E_cm)
 plt.tight_layout()
 plt.grid('on')
+#plt.savefig('../data/diffCS_H_150.pdf')
 plt.show()
 
 # QED
-plt.plot(c1, M_A, 'r--')
+plt.plot(c, dCS_A, 'r--')
 plt.plot(A150theta, A150dsigma, 'b-')
 plt.legend([r'$|M_\gamma|^2$', r'Comphep $|M_\gamma|^2$'])
 plt.xlabel(r'$\cos\theta$')
-plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta})$', size=14)
+plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta)} [pb]$', size=14)
 plt.title(r'$\sqrt{s} = %i$ GeV' %E_cm)
 plt.tight_layout()
 plt.grid('on')
+#plt.savefig('../data/diffCS_A_150.pdf')
 plt.show()
 
 # Electroweak
-plt.plot(c1, M_Z, 'r--')
+plt.plot(c, dCS_Z, 'r--')
 plt.plot(Z150theta, Z150dsigma, 'b-')
 plt.legend([r'$|M_Z|^2$', r'Comphep $|M_Z|^2$'])
 plt.xlabel(r'$\cos\theta$')
-plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta})$', size=14)
+plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta)} [pb]$', size=14)
 plt.title(r'$\sqrt{s} = %i$ GeV' %E_cm)
 plt.tight_layout()
 plt.grid('on')
+#plt.savefig('../data/diffCS_Z_150.pdf')
 plt.show()
 
 # Interference term QED, EW
-plt.plot(c1, M_AZ, 'r--')
+plt.plot(c, dCS_AZ, 'r--')
 #plt.plot(Z150theta, Z150dsigma, 'b-')
-plt.legend([r'$|M_{AZ}|^2$', r'Comphep $|M_Z|^2$'])
+plt.legend([r'$|M_{\gamma Z}|^2$', r'Comphep $|M_Z|^2$'])
 plt.xlabel(r'$\cos\theta$')
-plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta})$', size=14)
+plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta)} [pb]$', size=14)
 plt.title(r'$\sqrt{s} = %i$ GeV' %E_cm)
 plt.tight_layout()
+#plt.savefig('../data/diffCS_AZ_150.pdf')
 plt.grid('on')
 plt.show()
-
 
 # Total differential cross-section
 plt.plot(tot150theta, tot150dsigma, 'r-')
-plt.plot(c1, M_tot, 'b--')
-plt.plot(A150theta, A150dsigma, 'y--')
-plt.plot(Z150theta, Z150dsigma, 'g--')
-plt.plot(c1, M_AZ, 'm--')
-plt.plot(H150theta, H150dsigma, 'c--')
-plt.legend([r'Comphep $|M_{fi}|^2$', r'$|M_{fi}|^2$', r'$|M_A|^2$', r'$|M_Z|^2$', r'$|M_{AZ}|^2$', r'$|M_H|^2$'])
+plt.plot(c, dCS_tot, 'b--')
+plt.plot(c, dCS_A, 'g--')
+plt.plot(c, dCS_Z,'m--')
+#plt.plot(A150theta, A150dsigma, 'y--')
+#plt.plot(Z150theta, Z150dsigma, 'g--')
+plt.plot(c, dCS_AZ, 'c--')
+plt.plot(c, dCS_H, 'y--')
+#plt.plot(H150theta, H150dsigma, 'c--')
+plt.legend([r'Comphep $|M_{fi}|^2$', r'$|M_{fi}|^2$', r'$|M_{\gamma}|^2$', r'$|M_Z|^2$', r'$|M_{\gamma Z}|^2$', r'$|M_H|^2$'])
 plt.xlabel(r'$\cos\theta$')
-plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta})$', size=14)
+plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta)} [pb]$', size=14)
 plt.title(r'$\sqrt{s} = %i$ GeV' %E_cm)
 plt.tight_layout()
 plt.grid('on')
+#plt.savefig('../data/diffCS_tot_150.pdf')
 plt.show()
+"""
