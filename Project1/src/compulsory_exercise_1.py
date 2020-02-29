@@ -217,6 +217,7 @@ AFB_A = np.zeros((len(m), n))
 AFB_Z = np.zeros((len(m), n))
 AFB_AZ = np.zeros((len(m), n))
 AFB_tot = np.zeros((len(m), n))
+AFB_test = np.zeros((len(m), n))
 
 for j in range(len(m)):
     for i in range(len(E_cm)):
@@ -224,21 +225,25 @@ for j in range(len(m)):
         dCS_A = dCS(E_cm[i], c, m[j], cV_b[j], cA_b[j], cb_plus[j], cb_minus[j])[1]
         dCS_Z = dCS(E_cm[i], c, m[j], cV_b[j], cA_b[j], cb_plus[j], cb_minus[j])[2]
         dCS_AZ = dCS(E_cm[i], c, m[j], cV_b[j], cA_b[j], cb_plus[j], cb_minus[j])[3]
+        dCS_test = dCS_Z + dCS_A
         dCS_tot = dCS_A + dCS_Z + 2*dCS_AZ
 
         AFB_H[j, i] = AFB(dCS_H, E_cm)
         AFB_A[j, i] = AFB(dCS_A, E_cm)
         AFB_Z[j, i] = AFB(dCS_Z, E_cm)
         AFB_AZ[j, i] = AFB(dCS_AZ, E_cm)
+        AFB_test[j, i] = AFB(dCS_test, E_cm)
         AFB_tot[j, i] = AFB(dCS_tot, E_cm)
 
 plt.plot(E_cm, AFB_H[0, :], 'b--')
 plt.plot(E_cm, AFB_A[0, :], 'r--')
 plt.plot(E_cm, AFB_Z[0, :], 'g--')
+#plt.plot(E_cm, AFB_AZ[0, :], 'y--')
+plt.plot(E_cm, AFB_test[0, :], 'k--')
 plt.xlabel(r'$\sqrt{s}[GeV]$')
 plt.ylabel(r'$\sigma[pb]$')
 plt.title('Foward-Backward Asymmetry')
-plt.legend(['Higgs', 'QED', 'Z'])
+plt.legend(['Higgs', 'QED', 'Z', 'QED + Z'])
 plt.tight_layout()
 plt.grid('on')
 plt.savefig('../data/Asym_AZH.pdf')
