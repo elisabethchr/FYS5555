@@ -15,10 +15,13 @@ def importFile(filename, rows):
     return var, dat
 # differential cross-sections
 A10theta, A10dsigma = importFile("../data/comphep_dsigma_A_10.txt", 3)
-A150theta, A150dsigma = importFile("../data/comphep_dsigma_A_150.txt", 3)
 H150theta, H150dsigma = importFile("../data/comphep_dsigma_H_150.txt", 3)
+A150theta, A150dsigma = importFile("../data/comphep_dsigma_A_150.txt", 3)
 Z150theta, Z150dsigma = importFile("../data/comphep_dsigma_Z_150.txt", 3)
 tot150theta, tot150dsigma = importFile("../data/comphep_dsigma_total_150.txt", 3)
+A3000theta, A3000dsigma = importFile("../data/comphep_dsigma_A_5000.txt", 3)
+H3000theta, H3000dsigma = importFile("../data/comphep_dsigma_H_5000.txt", 3)
+Z3000theta, Z3000dsigma = importFile("../data/comphep_dsigma_Z_5000.txt", 3)
 # total cross-sections
 totE_lin, totSigma_lin = importFile("../data/comphep_sigma_10_150_lin.txt", 3)
 totE_log, totSigma_log = importFile("../data/comphep_sigma_10_150_log.txt", 3)
@@ -28,7 +31,8 @@ asymE_cc, asymSigma_cc = importFile("../data/comphep_Asym_tot_cC_10_150_lin.txt"
 asymE_ee, asymSigma_ee = importFile("../data/comphep_Asym_tot_eE_10_150_lin.txt", 3)
 #Zprime
 ZpE_log, Zsigma_log = importFile("../data/comphep_sigma_Zprime_log.txt", 3)
-dSigma_ZpE, ZpdSigma = importFile("../data/comphep_dsigma_Zprime_3000.txt", 3)
+dSigma_ZpE, ZpdSigma = importFile("../data/comphep_dsigma_Zprime_tot_5000.txt", 3)
+dSigma_ZpE2, ZpdSigma2 = importFile("../data/comphep_dsigma_Zprime_5000.txt", 3)
 asymE_Zp, asymSigma_Zp = importFile("../data/comphep_Asym_Zprime.txt", 3)
 
 #-----------------------------
@@ -113,6 +117,7 @@ def dCS(E_cm, c, m, cV_b, cA_b, cb_plus, cb_minus):
     M_H = (m**2*M**2*gW**4)/(4*(s-mH**2-1j*mH*widthH)**2*mW**4) * (p1p2*p3p4 - m**2*p1p2 - M**2*p3p4 + m**2*M**2)
 
     M_A = (4*np.pi*alpha)**2/float(s**2) * 8*(p1p4*p2p3 + p1p3*p2p4 + m**2*p1p2 + M**2*p3p4 + 2*m**2*M**2)
+
     M_Z = gZ**4/(2*((s-mZ**2)**2 + mZ**2*widthZ**2)) * (cMu_plus*cb_plus*(p1p4*p2p3 + p1p3*p2p4)\
                 + m**2*cMu_plus*cb_minus*p1p2\
                 + M**2*cMu_minus*cb_plus*p3p4\
@@ -160,7 +165,7 @@ for j in range(len(m)):
         CS_tot[j, i] = CS_A[j, i] + CS_Z[j, i] + 2*CS_AZ[j, i]
     print m[j]
 print CS_tot[0, -1]
-
+"""
 plt.plot(E_cm, CS_tot[0, :], 'b.')
 plt.plot(E_cm, CS_tot[1, :], 'r.')
 plt.plot(E_cm, CS_tot[2, :], 'g.')
@@ -174,13 +179,13 @@ plt.plot(E_cm, CS_tot[0, :], 'b--')
 plt.plot(E_cm, CS_H[0, :], 'y--')
 plt.plot(E_cm, CS_A[0, :], 'g--')
 plt.plot(E_cm, CS_Z[0, :], 'm--')
-plt.xlabel(r'$\sqrt{s}$', size=12)
+plt.xlabel(r'$\sqrt{s}[GeV]$', size=12)
 plt.ylabel(r'$\sigma$ [pb]')
 #plt.xlim(10, 150)
-plt.legend([r'Numerical $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'Analytical $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'Higgs', 'QED', r'Z'])
+plt.legend([r'CompHep $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'Analytical $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'Higgs', 'QED', r'Z'])
 plt.grid('on')
 plt.tight_layout()
-#plt.savefig('../data/sigma_tot_10_150_lin.pdf')
+plt.savefig('../data/sigma_tot_10_150_lin.pdf')
 plt.show()
 
 #logarithmic
@@ -188,15 +193,15 @@ plt.plot(totE_log, totSigma_log, 'r.')
 plt.loglog(E_cm, CS_tot[0, :], 'b--')
 plt.loglog(E_cm, CS_A[0, :], 'g--')
 plt.loglog(E_cm, CS_Z[0, :], 'y--')
-plt.xlabel(r'$\sqrt{s}$', size=12)
+plt.xlabel(r'$\sqrt{s}[GeV]$', size=12)
 plt.ylabel(r'$\sigma$ [pb]')
 #plt.xlim(10, 150)
-plt.legend([r'Numerical $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'Analytical $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'QED', r'Z'])
+plt.legend([r'CompHep $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'Analytical $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'QED', r'Z'])
 plt.grid('on')
 plt.tight_layout()
-#plt.savefig('../data/sigma_tot_10_150_log.pdf')
+plt.savefig('../data/sigma_tot_10_150_log.pdf')
 plt.show()
-
+"""
 
 #-----------------------------------------
 #     Forwards-Backwards asymmetry
@@ -234,7 +239,9 @@ for j in range(len(m)):
         AFB_AZ[j, i] = AFB(dCS_AZ, E_cm)
         AFB_test[j, i] = AFB(dCS_test, E_cm)
         AFB_tot[j, i] = AFB(dCS_tot, E_cm)
-
+        if AFB_tot[j, i] > -0.005 and AFB_tot[j, i] < 0.005:
+            print "m = %3f" %m[j], "Ecm = %3f" %E_cm[i], "AFB_tot = %3f" %AFB_tot[j, i]
+"""
 plt.plot(E_cm, AFB_H[0, :], 'b--')
 plt.plot(E_cm, AFB_A[0, :], 'r--')
 plt.plot(E_cm, AFB_Z[0, :], 'g--')
@@ -259,11 +266,11 @@ plt.xlabel(r'$\sqrt{s}[GeV]$')
 plt.ylabel(r'$\sigma [pb]$')
 plt.title('Forward-Backward Asymmetry')
 plt.legend([r'Analytic $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'Analytic $\sigma_{\mu^+\mu^-\rightarrow\overline{c}c}$', r'Analytic $\sigma_{\mu^+\mu^-\rightarrow e^+e^-}$',\
-            r'Numerical $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'Numerical $\sigma_{\mu^+\mu^-\rightarrow\overline{c}c}$', r'Numerical $\sigma_{\mu^+\mu^-\rightarrow e^+e^-}$'])
+            r'CompHep $\sigma_{\mu^+\mu^-\rightarrow\overline{b}b}$', r'CompHep $\sigma_{\mu^+\mu^-\rightarrow\overline{c}c}$', r'CompHep $\sigma_{\mu^+\mu^-\rightarrow e^+e^-}$'])
 plt.grid('on')
 plt.savefig('../data/Asym_tot_150.pdf')
 plt.show()
-
+"""
 """
 plt.plot(E_cm, AFB_tot, 'r.')
 plt.xlabel(r'$\sqrt{s}$', size=14)
@@ -274,42 +281,46 @@ plt.grid('on')
 plt.show()
 
 """
-"""
+
 #---------------------
 #   Zprime plotting
 #---------------------
-plt.plot(dSigma_ZpE, ZpdSigma, 'r--')
+plt.plot(dSigma_ZpE, ZpdSigma, 'b--')
+plt.plot(dSigma_ZpE2, ZpdSigma2, 'r--')
+plt.plot(Z3000theta, Z3000dsigma, 'm--')
+plt.plot(A3000theta, A3000dsigma, 'g--')
+plt.plot(H3000theta, H3000dsigma, 'y--')
 plt.xlabel(r'$\cos\theta$')
 plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta)}[pb]$')
-plt.legend([r'$\mu^+\mu^-\longrightarrow Z^\prime \longrightarrow b\overline{b}$'])
-plt.title(r'$\sqrt{s}=3$TeV')
+plt.legend([r'Total', r'$Z^\prime$', r'Z', r'QED', r'Higgs'])
+plt.title(r'$\sqrt{s}=15$TeV')
 plt.grid('on')
 plt.tight_layout()
-plt.savefig('../data/diffCS_Zprime_3000.pdf')
+plt.savefig('../data/diffCS_Zprime_5000.pdf')
 plt.show()
 
 plt.plot(ZpE_log, Zsigma_log, 'r--')
 plt.xlabel(r'$\sqrt{s}[GeV]$')
 plt.ylabel(r'$\sigma[pb]$')
-plt.legend([r'$\mu^+\mu^-\longrightarrow Z^\prime \longrightarrow b\overline{b}$'])
+plt.legend([r'Total'])
 plt.title(r'Total cross-section')
 plt.yscale('log')
 plt.grid('on')
 plt.tight_layout()
-plt.savefig('../data/CS_Zprime_3000.pdf')
+plt.savefig('../data/CS_Zprime_5000.pdf')
 plt.show()
 
 plt.plot(asymE_Zp, asymSigma_Zp, 'r--')
 plt.xlabel(r'$\sqrt{s}[GeV]$')
 plt.ylabel(r'$\sigma[pb]$')
-plt.legend([r'$\mu^+\mu^-\longrightarrow Z^\prime \longrightarrow b\overline{b}$'])
+plt.legend([r'Total'])
 plt.title(r'Forward-Backwards Asymmetry')
 plt.grid('on')
 plt.tight_layout()
-plt.savefig('../data/Asym_Zprime_3000.pdf')
+plt.savefig('../data/Asym_Zprime_5000.pdf')
 plt.show()
-"""
-"""
+
+
 #---------------------------------------------
 #    Differential cross-section plotting
 #---------------------------------------------
@@ -399,6 +410,5 @@ plt.ylabel(r'$\frac{d\sigma}{d(\cos\theta)} [pb]$', size=14)
 plt.title(r'$\sqrt{s} = %i$ GeV' %E_cm)
 plt.tight_layout()
 plt.grid('on')
-#plt.savefig('../data/diffCS_tot_150.pdf')
+plt.savefig('../data/diffCS_tot_150.pdf')
 plt.show()
-"""
