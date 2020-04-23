@@ -206,7 +206,7 @@ The particle raw rate can be seen in figure~\ref{fig:RawRate}. Here, each point 
 \end{figure}
 
 \subsubsection{Longitude and latitude}
-The latitude and longitude for POLA-01 onboard Nanuq can be seen in figure~\ref{fig:longitude_and_latitude}. We see from figure ~\ref{fig:RawRate} that the rate is relatively flat, which is to be expected from the theory of Arthur Compton from 1933, in which the intensity of cosmic rays remains constant approximately above latitudes of $60^\circ$N. When compared to the POLA-02 as a reference point, the variations\footnote{This is performed for the raw rates of POLA-01 and POLA-02, i.e. $\sigma\left(\frac{POLA-01/\langle POLA-01\rangle}{POLA-02/\langle POLA-02 \rangle}\right)$, in which we have excluded the two outliers of figure~\ref{fig:RawRate} corresponding to values less than 10.} of the raw rate is $2.04\%$. 
+The latitude and longitude for POLA-01 onboard Nanuq can be seen in figure~\ref{fig:longitude_and_latitude}. We see from figure ~\ref{fig:RawRate} that the rate is relatively flat, which is to be expected from the theory of Arthur Compton from 1933, in which the intensity of cosmic rays remains constant approximately above latitudes of $60^\circ$N. When compared to the POLA-02 as a reference point, the variations\footnote{This is performed for the raw rates of POLA-01 and POLA-02, i.e. $\sigma\left(\frac{POLA-01/\langle POLA-01\rangle}{POLA-02/\langle POLA-02 \rangle}\right)$, in which we have excluded the two outliers of figure~ corresponding to values less than 10.} of the raw rate is $2.04\%$. 
 
 \begin{figure}
 \centering
@@ -266,7 +266,7 @@ The barometric correction coefficients, $\gamma(p)$, to the raw rate can be expr
 \gamma(p) = e^{\alpha + \beta(p-p_{ref})}
 \end{align}
 
-where $\alpha$ and $\beta$ can be found by a least squares polynomial fit to the 1'st degree. In doing so we find the values as declared in table~\ref{tab:alpha_beta}.
+where $\alpha$ and $\beta$ can be found by a least squares polynomial fit to the first degree. In doing so we find the values as shown in table~\ref{tab:alpha_beta}.
 
 \begin{table}[]
 \caption{Values for parameters $\alpha$ and $\beta$ for the barometric correction coefficients as found by linear regression.}
@@ -281,7 +281,20 @@ POLA-03 & 3.317    & -1.493e-03 \\
 \end{tabular}
 \end{table}
 
-In calculating the corrected rate we can divide the raw rate by the barometric corrected coefficients, in which we choose to ignore $\alpha$. This is due to the fact that $\alpha$ can still be considered a biased parameter dependent on the conditions as discussed above. The corrected rate over time can be seen in figure~\ref{fig:CorrectedRate} which, compared to figure~\ref{fig:RawRate}, displays smoother curves resulting in less variance in our dataset. As a final note, the rate for the POLA-03 detector, as explained above, lies systematically lower than that of POLA-01, and -02, which can be caused by how dense the material surrounding the detectotr is. Thus, the materials surrounding a detector can have a significant effect on the rate measured.
+In calculating the corrected rate we can divide the raw rate by the barometric corrected coefficients, in which we choose to ignore $\alpha$. This is due to the fact that $\alpha$ can still be considered a biased parameter dependent on the conditions as discussed above. The corrected rate over time can be seen in figure~\ref{fig:CorrectedRate} which, compared to figure~\ref{fig:RawRate}, displays smoother curves resulting in less variance in our dataset. The mean values of the raw and corrected rates can be seen in table~\ref{tab:raw_vs_corrected}\footnote{Note however that the variance for the POLA-01 detector is nearly unchanged. This may be due to the two outliers of the rates as can be seen in figures~\ref{fig:RawRate} and~\ref{fig:CorrectedRate}, with values below 10Hz.}. As a final note, the rate for the POLA-03 detector, as explained above, lies systematically lower than that of POLA-01, and POLA-02, which can be caused by how dense the material surrounding the detectotr is. Thus, the materials surrounding a detector can have a significant effect on the rate measured.
+
+\begin{table}[]
+\caption{Comparison of the raw and corrected rates for each detector.}
+\label{tab:raw_vs_corrected}
+\begin{tabular}{c|cc}
+\hline\hline
+        & Raw             & Corrected       \\ \hline
+POLA-01 & $32.18\pm4.09$  & $32.22\pm 4.05$ \\
+POLA-02 & $32.87\pm0.49$  & $32.87\pm 0.19$ \\
+POLA-03 & $27.56\pm 0.16$ & $27.57\pm 0.11$ \\
+\hline\hline
+\end{tabular}
+\end{table}
 
 \begin{figure}
 \centering
